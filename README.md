@@ -1,5 +1,7 @@
 # pi-ast-grep
 
+> Copied from [github.com/can1357/oh-my-pi](https://github.com/can1357/oh-my-pi)
+
 AST-aware structural search and rewrite extension for [pi](https://github.com/earendil-works/pi-coding-agent), powered by [ast-grep](https://ast-grep.github.io/) and tree-sitter.
 
 ## Features
