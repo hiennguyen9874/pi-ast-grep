@@ -1,0 +1,8 @@
+{
+  "name": "pi-ast-grep-native",
+  "version": "0.1.0",
+  "private": true,
+  "napi": {
+    "binaryName": "pi_ast_grep_native"
+  }
+}

@@ -15,6 +15,9 @@
   "license": "MIT",
   "files": [
     "src",
+    "native/index.js",
+    "native/index.d.ts",
+    "native/*.node",
     "README.md",
     "LICENSE"
   ],
@@ -25,7 +28,8 @@
   },
   "dependencies": {
     "diff": "^8.0.2",
-    "file-type": "^21.3.4"
+    "file-type": "^21.3.4",
+    "typebox": "^1.1.24"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": ">=0.74.0",
@@ -34,13 +38,16 @@
     "@sinclair/typebox": "*"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "npm run build:native && vitest run",
+    "test:watch": "vitest",
+    "build:native": "napi build --release --platform --cwd native",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
     "@types/node": "^22.0.0",
     "ajv": "^8.20.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "@napi-rs/cli": "^3.7.0"
   }
 }
