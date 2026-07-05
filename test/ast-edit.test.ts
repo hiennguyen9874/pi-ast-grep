@@ -17,6 +17,47 @@ afterEach(async () => {
 });
 
 describe("ast_edit tools", () => {
+  it("rejects duplicate rewrite patterns", async () => {
+    const cwd = await tempDir();
+    const state: AstEditState = new Map();
+    const editTool = createAstEditTool(state) as any;
+
+    await expect(
+      editTool.execute(
+        "preview",
+        {
+          ops: [
+            { pat: "oldApi($$$ARGS)", out: "newApi($$$ARGS)" },
+            { pat: "oldApi($$$ARGS)", out: "otherApi($$$ARGS)" },
+          ],
+          paths: ["*.ts"],
+        },
+        undefined,
+        undefined,
+        { cwd },
+      ),
+    ).rejects.toThrow("Duplicate rewrite pattern");
+  });
+
+  it("reports parse errors in previews", async () => {
+    const cwd = await tempDir();
+    await writeFile(path.join(cwd, "fixture.ts"), "function broken( {\n", "utf8");
+
+    const state: AstEditState = new Map();
+    const editTool = createAstEditTool(state) as any;
+
+    const preview = await editTool.execute(
+      "preview",
+      { ops: [{ pat: "oldApi($$$ARGS)", out: "newApi($$$ARGS)" }], paths: ["*.ts"] },
+      undefined,
+      undefined,
+      { cwd },
+    );
+
+    expect(preview.content[0].text).toContain("Parse issues");
+    expect(preview.details.parseErrorsTotal).toBeGreaterThan(0);
+  });
+
   it("previews without changing the file, then applies through resolve", async () => {
     const cwd = await tempDir();
     const file = path.join(cwd, "fixture.ts");

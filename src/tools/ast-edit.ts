@@ -78,14 +78,12 @@ export interface AstEditDetails extends TextToolResultDetails {
 
 export interface PendingAstEdit {
   id: string;
-  params: AstEditParams;
   cwd: string;
   targets: ResolvedSearchTarget[];
   rewrites: Record<string, string>;
   maxFiles: number;
   signature: string;
   touchedFiles: string[];
-  createdAt: number;
 }
 
 export type AstEditState = Map<string, PendingAstEdit>;
@@ -207,6 +205,14 @@ function signatureFor(result: AggregatedEditResult): string {
   });
 }
 
+function targetsForTouchedFiles(touchedFiles: string[]): ResolvedSearchTarget[] {
+  return [...new Set(touchedFiles)].sort().map((filePath) => ({
+    rawPath: filePath,
+    basePath: filePath,
+    isFile: true,
+  }));
+}
+
 function renderChanges(result: AggregatedEditResult, parseErrors: string[], parseErrorsTotal: number, id?: string): string {
   const lines: string[] = [];
   const byFile = new Map<string, DisplayChange[]>();
@@ -267,8 +273,12 @@ export function createAstEditTool(state: AstEditState) {
     promptGuidelines: [
       "Use ast_edit for codemods or structural rewrites where text replacement is unsafe.",
       "ast_edit previews only; call ast_edit_resolve with action `apply` or `discard` after reviewing the preview.",
-      "Use `$$$NAME`, not `$$NAME`, for zero-or-more ast_edit metavariable captures.",
-      "Treat ast_edit parse issues as malformed pattern or mis-scoped paths, not as a clean no-op.",
+      "Narrow each ast_edit call to one language and subsystem; broad parse issues usually mean the pattern or paths are mis-scoped.",
+      "Use `$NAME` for one AST node and `$$$NAME` for zero-or-more captures; `$$NAME` is invalid.",
+      "Metavariable names are uppercase and must be whole AST nodes; partial text such as `prefix$VAR` or `\"hello $NAME\"` does not work.",
+      "The same metavariable repeated in a pattern requires identical code at each occurrence, such as `$A == $A` matching `x == x` only.",
+      "Rewrite patterns must parse as a single valid AST node; wrap non-standalone snippets in context like `class $_ { $$$BODY }`.",
+      "TS declarations and methods often need tolerant wrappers, such as `async function $NAME($$$ARGS): $_ { $$$BODY }`.",
     ],
     parameters: astEditParameters,
 
@@ -290,14 +300,12 @@ export function createAstEditTool(state: AstEditState) {
       const signature = signatureFor(preview);
       state.set(id, {
         id,
-        params,
         cwd: ctx.cwd,
         targets,
         rewrites,
         maxFiles,
         signature,
         touchedFiles: preview.fileChanges.map((entry) => entry.absolutePath),
-        createdAt: Date.now(),
       });
 
       const details = detailsFor(preview, parse.errors, parse.total, { id });
@@ -369,7 +377,7 @@ export function createAstEditResolveTool(state: AstEditState) {
           );
         }
 
-        const applied = await runAstEditTargets(pending.targets, pending.cwd, {
+        const applied = await runAstEditTargets(targetsForTouchedFiles(pending.touchedFiles), pending.cwd, {
           rewrites: pending.rewrites,
           dryRun: false,
           maxFiles: pending.maxFiles,

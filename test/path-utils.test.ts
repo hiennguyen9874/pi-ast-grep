@@ -49,4 +49,11 @@ describe("path utils", () => {
       "README.md",
     ]);
   });
+
+  it("rejects URL paths", async () => {
+    const cwd = await tempDir();
+    await expect(parseSearchPathPreferringLiteral("https://example.com/file.ts", cwd)).rejects.toThrow(
+      "Only local filesystem paths are supported",
+    );
+  });
 });

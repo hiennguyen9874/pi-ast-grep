@@ -1,4 +1,3 @@
-import path from "node:path";
 import { Type } from "typebox";
 import { astGrep, type AstFindMatch } from "../../native/index.js";
 import {
@@ -168,7 +167,12 @@ export function createAstGrepTool() {
     promptGuidelines: [
       "Use ast_grep when syntax shape matters more than text, such as calls, declarations, imports, or language constructs.",
       "Avoid repo-root ast_grep scans; narrow `path` to one language or subsystem first.",
-      "Use `$$$NAME`, not `$$NAME`, for zero-or-more ast_grep metavariable captures.",
+      "Use `$NAME` for one AST node and `$$$NAME` for zero-or-more captures; `$$NAME` is invalid.",
+      "Metavariable names are uppercase and must be whole AST nodes; partial text such as `prefix$VAR`, `\"hello $NAME\"`, or `a $OP b` does not work.",
+      "The same metavariable repeated in a pattern requires identical code at each occurrence, such as `$A == $A` matching `x == x` only.",
+      "Patterns must parse as a single valid AST node; wrap non-standalone snippets in context like `class $_ { $$$BODY }`.",
+      "C++ expression-statement calls usually need a trailing semicolon, such as `$CALLEE($ARG);`.",
+      "Declaration forms are distinct shapes: function declarations, methods, and arrow-function variables need different patterns.",
       "Treat ast_grep parse issues as query failure or mis-scoping, not proof that no code exists.",
     ],
     parameters: astGrepParameters,

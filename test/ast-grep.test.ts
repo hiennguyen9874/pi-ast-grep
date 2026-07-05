@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { astGrep } from "../native/index.js";
 import { createAstGrepTool } from "../src/tools/ast-grep";
 
 const tempDirs: string[] = [];
@@ -39,5 +40,25 @@ describe("ast_grep tool", () => {
 
     expect(result.content[0].text).toContain("No matches found");
     expect(result.details.matchCount).toBe(0);
+  });
+
+  it("reports parse errors", async () => {
+    const cwd = await tempDir();
+    await writeFile(path.join(cwd, "fixture.ts"), "function broken( {\n", "utf8");
+
+    const tool = createAstGrepTool() as any;
+    const result = await tool.execute("call", { pat: "console.log($$$ARGS)", path: "*.ts" }, undefined, undefined, { cwd });
+
+    expect(result.content[0].text).toContain("Parse issues");
+    expect(result.details.parseErrorsTotal).toBeGreaterThan(0);
+  });
+
+  it("honors native timeouts", async () => {
+    const cwd = await tempDir();
+    await writeFile(path.join(cwd, "fixture.ts"), "const x = 1;\n", "utf8");
+
+    await expect(
+      astGrep({ patterns: ["$A"], path: cwd, glob: "*.ts", timeoutMs: 0 }),
+    ).rejects.toThrow(/timed out/u);
   });
 });
