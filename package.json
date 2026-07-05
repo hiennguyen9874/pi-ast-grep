@@ -1,8 +1,8 @@
 {
-  "name": "pi-shake",
+  "name": "pi-ast-grep",
   "version": "0.1.0",
   "description": "",
-  "author": "pi-shake contributors",
+  "author": "pi-ast-grep contributors",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
